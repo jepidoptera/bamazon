@@ -1,0 +1,19 @@
+{
+  "name": "bamazon",
+  "version": "1.0.0",
+  "description": "database app, checks inventory against customer orders",
+  "main": "data.js",
+  "dependencies": {
+    "chalk": "^2.4.2",
+    "inquirer": "^6.3.1",
+    "mysql": "^2.16.0",
+    "mysql2": "^1.6.5",
+    "press-any-key": "^0.1.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Peter Allen",
+  "license": "ISC"
+}
