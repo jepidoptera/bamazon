@@ -86,12 +86,35 @@ async function admin () {
                 {name: "log out admin", value: "logout"}]    
         }]);
         print (answer.selection);
-        if (answer.selection == "add") print ("add is not yet implemented.");
+        if (answer.selection == "add") admin_addItem();
         if (answer.selection == "remove") print ("remove is not yet implemented.");
         if (answer.selection == "restock") print ("restock is not yet implemented.");
         if (answer.selection == "logout") break;    
     }
     mainMenu();
+}
+
+async function admin_addItem() {
+    // get input about the item to add
+    var newItem = await inquirer.prompt([{
+        name: "name",
+        message: "product name:",
+        type: "input"
+    }, {
+        name: "price",
+        message: "price per unit:",
+        type: "number"
+    }, {
+        name: "description",
+        message: "item description:",
+        type: "input"
+    }]);
+    newItem.department_name = await inquirer.prompt([{
+        name: "department_name",
+        message: "select",
+        type: "list",
+        choices: categories
+    }]);
 }
 
 async function categories () {
@@ -140,7 +163,7 @@ async function viewItem(item){
         if (err) {print (err); return;}
         // display each column name and value for this item
         item = results[0];
-        // initialize cart quantity for this item
+        // get total quantity minus cart quantity for this item
         if (!cart[item.product_name]) {
             product_available = item.product_quantity;
         }
@@ -186,7 +209,9 @@ async function viewItem(item){
                 else if (order_quantity <= item.product_quantity) {
                     // valid order.
                     cart[item.product_name] = new Order(item.product_name, parseInt(order_quantity), parseFloat(item.price));
-                    print (chalk.white.bgRed(order_quantity + " " + plural(item.product_name) + " added to cart."));
+                    print (chalk.white.bgRed(order_quantity + " " + 
+                    (item.quantity > 0 ? plural(item.product_name) : item.product_name)
+                    + " added to cart."));
                     ordered = true;
                 }
                 else {
@@ -267,7 +292,7 @@ async function checkout() {
                 name: "answer"
             })
             yn = yn.answer;
-            if (yn == "n") {
+            if (yn == "no") {
                 address = "";
                 print ("Try again.");
             }
@@ -275,14 +300,16 @@ async function checkout() {
         // got address, on to update the database
         Object.keys(cart).forEach((item) => {
             print ("Processing: " + cart[item].name);
-            connection.query(
-                "select product_quantity from products where product_name=?",
-                [cart[item].name], (err, result) => {
+            var query = 'select * from products where product_name="' + cart[item].name +'"';
+            // console.log(query);
+            connection.query(query, (err, result) => {
+                    // console.log(result);
+                    // console.log(JSON.stringify(result[0]));
                     if (err) console.log("error:", err)
                     else {
                         connection.execute(
                             "update products set product_quantity=? where product_name=?",
-                            [result.product_quantity - cart[item].quantity, cart[item].product_name]
+                            [result[0].product_quantity - cart[item].quantity, cart[item].name]
                         );
                         print ("Processed order: " + cart[item].name + ".")
                     }
@@ -297,14 +324,6 @@ async function checkout() {
         pressAnyKey("Press any key to continue").then(mainMenu);
         return;
     }
-}
-
-function inCart (itemName) {
-    // how many of this item are in the cart already?
-    var number = 0;
-    cart.forEach((item) => {
-        if (item.name == itemName) number += item.quantity;
-    });
 }
 
 function plural (item) {
